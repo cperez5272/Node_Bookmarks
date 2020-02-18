@@ -66,6 +66,13 @@ bookRouter
                 .status(404)
                 .send('Nope Nope Not Found Nope')
         }
+
+        books.splice(bookIndex, 1)
+
+        logger.info(`Books with id ${id} has been removed. :D`)
+        res
+            .status(204)
+            .end()
     })
 
 

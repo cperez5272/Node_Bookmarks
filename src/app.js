@@ -15,10 +15,35 @@ const morganOption = (NODE_ENV === 'production')
 app.use(morgan(morganOption))
 app.use(helmet())
 
+app.get('/bookmarks', (req, res, next) => {
+    res.send('All articles')
+})
+
+app.get('/bookmarks/:bookmark_id', (req, res, next) => {
+    BookmarksService.getById(
+      req.app.get('db'),
+      req.params.bookmark_id
+    )
+      .then(bookmarks => {
+       res.json({
+         id: bookmark.id,
+         title: bookmark.title,
+         url: bookmark.url,
+         description: bookmark.description,
+         rating: bookmark.rating,
+       })
+      })
+      .catch(next)
+  })
+
+app.get('/articles/:article_id', (req, res, next) => {
+    res.json({ 'requested_id': req.params.article_id, this: 'should fail' })
+})
+
 app.use(function validateBearerToken(req, res, next) {
     const apiToken = process.env.API_TOKEN
     const authToken = req.get('Authorization')
-  
+
     if (!authToken || authToken.split(' ')[1] !== apiToken) {
         // logger.error(`Unauthorized request to path: ${req.path}`)
         return res.status(401).json({ error: 'Unauthorized request' })

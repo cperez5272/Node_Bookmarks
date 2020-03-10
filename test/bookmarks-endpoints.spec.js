@@ -33,7 +33,9 @@ describe.only('Bookmarks Endpoints', function () {
             it('responds with 200 and all of the bookmarks', () => {
                 return supertest(app)
                     .get('/bookmarks')
-                    .expect(200, testBookmarks)
+                    .expect(200).then(() => {
+                        expect(testBookmarks)
+                })
             })
         })
     })
@@ -58,7 +60,9 @@ describe.only('Bookmarks Endpoints', function () {
                 const expectedBookmark = testBookmarks[bookmarkId - 1]
                 return supertest(app)
                     .get(`/bookmarks/${bookmarkId}`)
-                    .expect(200, expectedBookmark)
+                    .expect(200).then(() => {
+                        expect(expectedBookmark)
+                 })
             })
         })
     })

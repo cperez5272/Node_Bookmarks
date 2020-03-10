@@ -35,7 +35,7 @@ describe.only('Bookmarks Endpoints', function () {
                     .get('/bookmarks')
                     .expect(200).then(() => {
                         expect(testBookmarks)
-                })
+                    })
             })
         })
     })
@@ -53,16 +53,18 @@ describe.only('Bookmarks Endpoints', function () {
             it('GET /bookmarks responds with 200 and all of the bookmarks', () => {
                 return supertest(app)
                     .get('/bookmarks')
-                    .expect(200, testBookmarks)
+                    .expect(200).then(() => {
+                        expect(testBookmarks)
+                    })
             })
-            it('GET /bookmarks/:bookmark_id responds with 200 and the specified article', () => {
+            it('GET /bookmarks/:bookmark_id responds with 200 and the specified bookmark', () => {
                 const bookmarkId = 2
                 const expectedBookmark = testBookmarks[bookmarkId - 1]
                 return supertest(app)
                     .get(`/bookmarks/${bookmarkId}`)
                     .expect(200).then(() => {
                         expect(expectedBookmark)
-                 })
+                    })
             })
         })
     })

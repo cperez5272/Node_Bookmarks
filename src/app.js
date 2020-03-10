@@ -1,3 +1,4 @@
+// import BookmarksService from 
 require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
@@ -5,6 +6,7 @@ const cors = require('cors')
 const helmet = require('helmet')
 const { NODE_ENV } = require('./config')
 const bookRouter = require('./bookmarks/bookmark-router')
+const BookmarksService = require('./bookmarks/bookmarkService')
 
 const app = express()
 
@@ -54,7 +56,6 @@ app.use(function validateBearerToken(req, res, next) {
 
 app.use(bookRouter)
 
-
 app.get('/', (req, res) => {
     res.send('Hello, boilderplate!')
 })
@@ -69,7 +70,6 @@ app.use(function errorHandler(error, req, res, next) {
     }
     res.status(500).json(response)
 })
-
 
 app.use(cors())
 

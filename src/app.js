@@ -18,28 +18,30 @@ app.use(morgan(morganOption))
 app.use(helmet())
 
 app.get('/bookmarks', (req, res, next) => {
-    res.send('All articles')
+    const knexInstance = req.app.get('db')
+    BookmarksService.getAllBookmarks(knexInstance)
+        .then(bookmarks => {
+            res.json(bookmarks)
+        })
+        .catch(next)
 })
 
 app.get('/bookmarks/:bookmark_id', (req, res, next) => {
-    BookmarksService.getById(
-      req.app.get('db'),
-      req.params.bookmark_id
-    )
-      .then(bookmarks => {
-       res.json({
-         id: bookmark.id,
-         title: bookmark.title,
-         url: bookmark.url,
-         description: bookmark.description,
-         rating: bookmark.rating,
-       })
-      })
-      .catch(next)
+    const knexInstance = req.app.get('db')
+    BookmarksService.getById(knexInstance, req.params.bookmark_id)
+        .then(bookmark => {
+            if (!bookmark) {
+                return res.status(404).json({
+                    error: { message: `Bookmark doesn't exist` }
+                })
+            }
+            res.json(bookmark)
+        })
+        .catch(next)
   })
 
-app.get('/articles/:article_id', (req, res, next) => {
-    res.json({ 'requested_id': req.params.article_id, this: 'should fail' })
+app.get('/bookmarks/:bookmark_id', (req, res, next) => {
+    res.json({ 'requested_id': req.params.bookmark_id, this: 'should fail' })
 })
 
 app.use(function validateBearerToken(req, res, next) {
@@ -57,7 +59,7 @@ app.use(function validateBearerToken(req, res, next) {
 app.use(bookRouter)
 
 app.get('/', (req, res) => {
-    res.send('Hello, boilderplate!')
+    res.send('Hello, world!')
 })
 
 app.use(function errorHandler(error, req, res, next) {

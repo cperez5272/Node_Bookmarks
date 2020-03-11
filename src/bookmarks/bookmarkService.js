@@ -1,5 +1,5 @@
 const BookmarksService = {
-    getAllArticles(knex) {
+    getAllBookmarks(knex) {
         return knex.select('*').from('bookmarks_server')
     },
     getById(db, id) {

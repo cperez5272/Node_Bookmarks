@@ -1,79 +1,106 @@
 const express = require('express')
-const uuid = require('uuid/v4')
-const logger = require('../logger')
-const { books } = require('../book')
-const bookRouter = express.Router()
-const bodyParser = express.json()
+const bookmarksService = require('./bookmarkService')
+const xss = require('xss')
+const path = require('path')
 
-bookRouter
-    .route('/bookmarks')
-    .get((req, res) => {
-        res.json(books)
+const bookmarksRouter = express.Router()
+const jsonParser = express.json()
+
+bookmarksRouter
+    .route('/')
+    .get((req, res, next) => {
+        bookmarksService.getAllBookmarks(
+            req.app.get('db')
+        )
+            .then(bookmarks => {
+                res.json(bookmarks)
+            })
+            .catch(next)
     })
-.post(bodyParser, (req, res) => {
-    const { name, content } = req.body
-    if (!name) {
-        logger.error(`Name is very much required`)
-        return res
-            .status(400)
-            .send('Invalid data! Need name!')
-    }
-    if (!content) {
-        logger.error(`Some content would be dope.`)
-        return res
-            .status(400)
-            .send('Bad data! Need to see content!')
-    }
+    .post(jsonParser, (req, res, next) => {
+        const { title, description, rating } = req.body
+        const newBookmark = { title, description, rating }
 
-    const id = uuid()
-
-    const book = {
-        id,
-        name,
-        content
-    }
-
-    books.push(book)
-
-    logger.info(`book with id ${id} has been created! Yaaay!`)
-
-    res
-        .status(201)
-        .location(`http://localhost:8000/card/${id}`)
-        .json(book)
-})
-
-bookRouter
-    .route('/bookmarks/:id')
-    .get((req, res) => {
-        const { id } = req.params
-        const book = books.find(found => found.id == id)
-
-        if(!book) {
-            logger.error(`Book with id ${id} cannot be found`)
-            return res
-                .status(404)
-                .send('Find the darn book!')
-        }
-        res.json(book)
-})
-    .delete((req, res) => {
-        const { id } = req.params
-        const bookIndex = books.findIndex(found => found.id == id)
-        if (bookIndex === -1) {
-            logger.error(`Book with id ${id} was not found :c`)
-            return res
-                .status(404)
-                .send('Nope Nope Not Found Nope')
+        for (const [key, value] of Object.entries(newBookmark)) {
+            if (value == null) {
+                return res.status(400).json({
+                    error: { message: `Missing '${key}' in request body` }
+                })
+            }
         }
 
-        books.splice(bookIndex, 1)
-
-        logger.info(`Books with id ${id} has been removed. :D`)
-        res
-            .status(204)
-            .end()
+        bookmarksService.insertBookmark(
+            req.app.get('db'),
+            newBookmark
+        )
+            .then(bookmark => {
+                res
+                    .status(201)
+                    .location(path.posix.join(req.originalUrl, `/${bookmark.id}`))
+                    .json(bookmark)
+            })
+            .catch(next)
     })
 
+bookmarksRouter
+    .route('/:bookmark_id')
+    .all((req, res, next) => {
+        bookmarksService.getById(
+            req.app.get('db'),
+            req.params.bookmark_id
+        )
+            .then(bookmark => {
+                if (!bookmark) {
+                    return res.status(404).json({
+                        error: { message: `Bookmark doesn't exist` }
+                    })
+                }
+                res.bookmark = bookmark // save the bookmark for the next middleware
+                next() // don't forget to call next so the next middleware happens!
+            })
+            .catch(next)
+    })
+    .get((req, res, next) => {
+        res.json({
+            id: res.bookmark.id,
+            rating: res.bookmark.rating,
+            title: xss(res.bookmark.title), // sanitize title
+            description: xss(res.bookmark.description), // sanitize content
+            url: res.bookmark.url,
+        })
+    })
+    .delete((req, res, next) => {
+        bookmarksService.deleteBookmark(
+            req.app.get('db'),
+            req.params.bookmark_id
+        )
+            .then(() => {
+                res.status(204).end()
+            })
+            .catch(next)
+    })
+    .patch(jsonParser, (req, res, next) => {
+        const { title, description, rating } = req.body
+        const bookmarkToUpdate = { title, description, rating }
 
-module.exports = bookRouter
+        const numberOfValues = Object.values(bookmarkToUpdate).filter(Boolean).length
+        if (numberOfValues === 0) {
+            return res.status(400).json({
+                error: {
+                    message: `Request body must contain either 'title', 'description' or 'rating'`
+                }
+            })
+        }
+
+        bookmarksService.updateBookmark(
+            req.app.get('db'),
+            req.params.bookmark_id,
+            bookmarkToUpdate
+        )
+            .then(numRowsAffected => {
+                res.status(204).end()
+            })
+            .catch(next)
+    })
+
+module.exports = bookmarksRouter

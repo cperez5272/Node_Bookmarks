@@ -30,7 +30,26 @@ function makeBookmarksArray() {
       },
     ];
   }
+  function makeMeanieBookmark() {
+    const meanieBookmark = {
+      id: 911,
+      rating: 'Negative 10 for trying to hack :c',
+      url: 'Stop_Being_A_Meanie.org',
+      title: 'Naughty naughty very naughty <script>alert("xss");</script>',
+      description: `Bad image <img src="https://url.to.file.which/does-not.exist" onerror="alert(document.cookie);">. But not <strong>all</strong> bad.`
+    }
+    const expectedBookmark = {
+      ...meanieBookmark,
+      title: 'Naughty naughty very naughty &lt;script&gt;alert(\"xss\");&lt;/script&gt;',
+      description: `Bad image <img src="https://url.to.file.which/does-not.exist">. But not <strong>all</strong> bad.`
+    }
+    return {
+      meanieBookmark,
+      expectedBookmark,
+    }
+  }
   
   module.exports = {
     makeBookmarksArray,
+    makeMeanieBookmark,
   }
